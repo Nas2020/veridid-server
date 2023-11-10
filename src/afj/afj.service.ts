@@ -4,6 +4,7 @@ import { Agent, AutoAcceptProof, ConnectionEventTypes, ConnectionStateChangedEve
 import { InitializeAfjDto } from './dto/initialize-afj.dto';
 import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
 import { AfjAgent } from './entities/afj.entity';
+import { KeyDerivationMethod } from '@aries-framework/core'
 
 
 @Injectable()
@@ -47,7 +48,7 @@ export class AfjService {
     return result;
   }
 
-  async createAgent(initSsi: InitializeAfjDto): Promise<string> {
+  async createAgent(initAfj: InitializeAfjDto): Promise<string> {
 
     interface AgentInfo {
       agentId: string;
@@ -56,20 +57,21 @@ export class AfjService {
       agent: object;
     }
 
-    if (this.agents.has(initSsi.agentId)) {
-      throw new BadRequestException(`Agent with ID ${initSsi.agentId} already exists.`);
+    if (this.agents.has(initAfj.agentId)) {
+      throw new BadRequestException(`Agent with ID ${initAfj.agentId} already exists.`);
 
     }
 
 
     const config: InitConfig = {
-      label: initSsi.label,
+      label: initAfj.label,
       logger: new ConsoleLogger(LogLevel.info),
       walletConfig: {
-        id: initSsi.walletId,
-        key: initSsi.walletKey,
+        id: initAfj.walletId,
+        key: initAfj.walletKey,
+        keyDerivationMethod: KeyDerivationMethod.Argon2IMod
       },
-      publicDidSeed: initSsi.publicDIDSeed,
+      publicDidSeed: initAfj.publicDIDSeed,
       indyLedgers: [
         {
           indyNamespace: 'BCovrinTest',
@@ -81,7 +83,7 @@ export class AfjService {
       autoAcceptConnections: true,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
       connectToIndyLedgersOnStartup: true,
-      endpoints: [initSsi.agentConfig.endpoint + ':' + initSsi.agentConfig.inPort]
+      endpoints: [initAfj.agentConfig.endpoint + ':' + initAfj.agentConfig.inPort]
     }
     // Creating an agent instance
     const agent = new Agent({ config: config, dependencies: agentDependencies })
@@ -89,17 +91,17 @@ export class AfjService {
 
     // Registering the required in- and outbound transports
     agent.registerOutboundTransport(new HttpOutboundTransport())
-    agent.registerInboundTransport(new HttpInboundTransport({ port: initSsi.agentConfig.inPort }))
+    agent.registerInboundTransport(new HttpInboundTransport({ port: initAfj.agentConfig.inPort }))
 
     // Function to initialize the agent
     const initialize = async () => await agent.initialize().catch(console.error)
     await agent.initialize();
     this.afjAgent.agent = agent
-    this.afjAgent.agentId = initSsi.agentId
-    this.afjAgent.inPort = initSsi.agentConfig.inPort
-    this.afjAgent.endpoint = initSsi.agentConfig.endpoint
-    console.log("New agent = ", initSsi)
-    console.log("this.afjAgent from service", this.afjAgent)
+    this.afjAgent.agentId = initAfj.agentId
+    this.afjAgent.inPort = initAfj.agentConfig.inPort
+    this.afjAgent.endpoint = initAfj.agentConfig.endpoint
+    console.log("New agent = ", initAfj)
+    //console.log("this.afjAgent from service", this.afjAgent)
     const agentInfo: AgentInfo = {
       agentId: this.afjAgent.agentId,
       endpoint: this.afjAgent.endpoint,
@@ -107,10 +109,10 @@ export class AfjService {
       agent: this.afjAgent.agent
     }
 
-    console.log("agentInfo", agentInfo)
+    //console.log("agentInfo", agentInfo)
     this.setupConnectionListener()
     this.setupProofRequestListener()
-    await this.agents.set(initSsi.agentId, agentInfo);
+    await this.agents.set(initAfj.agentId, agentInfo);
     return `Agent with agent ID ${this.afjAgent.agentId} successfully created and initialized`
 
   }
@@ -143,16 +145,16 @@ export class AfjService {
 
   async createInvitation(): Promise<String> {
 
+    
     var outOfBandRecord = await this.afjAgent.agent.oob.createLegacyInvitation()
     var invite = {
       invitationUrl: outOfBandRecord.invitation.toUrl({ domain: this.afjAgent.endpoint + ':' + this.afjAgent.inPort }),
       outOfBandRecord
     }
-
     /*
     const outOfBandRecord = await this.afjAgent.agent.oob.createInvitation()
     var invite = {
-      invitationUrl: outOfBandRecord.outOfBandInvitation.toUrl({ domain: 'http://'+ssiAgent.endpoint+':'+ssiAgent.inPort }),
+      invitationUrl: outOfBandRecord.outOfBandInvitation.toUrl({ domain: 'http://'+this.afjAgent.endpoint+':'+this.afjAgent.inPort }),
       outOfBandRecord,
     }
     */

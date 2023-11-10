@@ -51,6 +51,38 @@ export class ConnectionsService {
         return { page: pagination, total: totalItems};  
     }
 
+
+    async getListClassic(query: any): Promise<any> {
+        console.log("Connections service - getListClassic")
+        //console.log("Agent=", this.afjService.afjAgent.agent)
+        let classicRecords = await this.afjService.afjAgent.agent.connections.getAll()
+        // { pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object}, meta: {Object} }
+        console.log("Display:", query);
+        // Filter
+        if(query.q) {
+            classicRecords = _.where(classicRecords, {id: query.q});
+            console.log("Filtered:", classicRecords)
+        }
+        const totalItems = classicRecords.length
+        // Sort 
+        if(query._order === "DESC") {
+            classicRecords.sort((a, b) => (a[query._sort] < b[query._sort]) ? 1 : -1)
+        } 
+        else {
+            classicRecords.sort((a, b) => (a[query._sort] > b[query._sort]) ? 1 : -1)
+        }
+        // Paginate
+        // Return just the requested page
+        let pagination =[]
+        let lastOnPage = (totalItems > query._end) ? query._end : totalItems
+        for(let i = query._start ; i < lastOnPage; i++) {
+          console.log("ID=",classicRecords[i].id)
+          pagination.push(classicRecords[i])
+        }
+        return { page: pagination, total: totalItems};  
+
+    }
+
     async getOne(id:string): Promise<any> {
         console.log("Connections service - getListOOB")
         const connection = await this.afjService.afjAgent.agent.oob.getById(id)

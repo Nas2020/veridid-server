@@ -4,6 +4,7 @@ import { AfjService } from './afj.service';
 
 @Module({
   controllers: [AfjController],
-  providers: [AfjService]
+  providers: [AfjService],
+  exports: [AfjService],
 })
 export class AfjModule {}
