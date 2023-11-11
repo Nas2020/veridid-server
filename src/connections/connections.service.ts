@@ -16,7 +16,7 @@ export class ConnectionsService {
     async getListOOB(query: any): Promise<any> {
         console.log("Connections service - getListOOB")
         console.log("Agent=", this.afjService.afjAgent.agent)
-        let outOfBandRecords = await this.afjService.afjAgent.agent.oob.getAll()
+        let outOfBandRecords = await this.afjService.afjAgent.agent.connections.getAll();
         //let outOfBandRecords = await this.ssiService.ssiAgent.agent.connections.getAll()
         // { pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object}, meta: {Object} }
         console.log("Display:", query);
@@ -51,6 +51,18 @@ export class ConnectionsService {
         return { page: pagination, total: totalItems};  
     }
 
+    async getListClassicPlain(): Promise<any> {
+        console.log("Connections service - getListClassic Plain")
+        let classicRecords = await this.afjService.afjAgent.agent.connections.getAll()
+        return classicRecords;  
+
+    }
+
+    async createInviteClassic(): Promise<String> {
+        let inviteURL = await this.afjService.createInvitation()
+        console.log("Connection Service invite url=", inviteURL )
+        return inviteURL;  
+    }
 
     async getListClassic(query: any): Promise<any> {
         console.log("Connections service - getListClassic")
@@ -81,6 +93,11 @@ export class ConnectionsService {
         }
         return { page: pagination, total: totalItems};  
 
+    }
+
+    async receiveInvitation(invitation: string) : Promise<any> {
+        console.log("Connections Service receiveInvitation Invitation=", invitation);
+        return await this.afjService.receiveInvitation(invitation);
     }
 
     async getOne(id:string): Promise<any> {

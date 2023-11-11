@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { Schema, CredDef } from 'indy-sdk'
-import { Agent, AutoAcceptProof, ConnectionEventTypes, ConnectionStateChangedEvent, ConsoleLogger, DidExchangeState, HttpOutboundTransport, InitConfig, LogLevel, ProofEventTypes, ProofStateChangedEvent } from '@aries-framework/core';
+import { Agent, AutoAcceptProof, BasicMessageEventTypes, BasicMessageStateChangedEvent, ConnectionEventTypes, ConnectionStateChangedEvent, ConsoleLogger, DidExchangeState, HttpOutboundTransport, InitConfig, LogLevel, ProofEventTypes, ProofStateChangedEvent, BasicMessageRole } from '@aries-framework/core';
 import { InitializeAfjDto } from './dto/initialize-afj.dto';
 import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
 import { AfjAgent } from './entities/afj.entity';
@@ -25,13 +25,24 @@ export class AfjService {
       }
     })
   }
+
   schema1 = null;
+
   setupProofRequestListener() {
     console.log("Listen for proof")
     this.afjAgent.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
       //console.log("Proof presentation=",payload.proofRecord )
       console.log("Proof state: ", payload.proofRecord?.state)
       console.log("Proof verified: ", payload.proofRecord?.isVerified ? 'Verified' : 'not Verified')
+    })
+  }
+
+  setupMessageListener() {
+    console.log("Listen for messages")
+    this.afjAgent.agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async ({ payload }: BasicMessageStateChangedEvent) => {
+      if (payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
+        console.log("Message:",payload.message.content);
+      }
     })
   }
 
@@ -180,6 +191,13 @@ export class AfjService {
     */
     console.log(`invitation from agent ${this.agents.get(agentId)["agentId"]}, invitation URL is ${invite.invitationUrl}`)
     return invite.invitationUrl
+  }
+
+  receiveInvitation = async (invitationUrl: string) => {
+    console.log("Invitation URL=", invitationUrl)
+    const { outOfBandRecord } = await this.afjAgent.agent.oob.receiveInvitationFromUrl(invitationUrl)
+  
+    return outOfBandRecord
   }
 
   async issueCred(credDef: CredDef) {

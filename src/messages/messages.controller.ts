@@ -2,6 +2,8 @@ import { Body, Controller, Get, Param, Res, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiProperty } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { MessagesDto } from './dto/messages.dto';
+import { SendMessageDto } from './dto/send.message.dto';
+import { Console } from 'console';
 
 @Controller('messages')
 export class MessagesController {
@@ -19,13 +21,22 @@ export class MessagesController {
     }
 */
     @ApiTags('messages')
-    @Get('')
+    @Post('')
     async getMessages(@Res() response, @Body() messagesDto: MessagesDto): Promise<any> {
+      console.log("MessageDto: ", messagesDto)
       const values = await this.messagesService.getMessages(messagesDto.connectionId);
-      response.set('Access-Control-Expose-Headers', 'X-Total-Count')
-      response.set('X-Total-Count', values.total)
-      response.status(200).send(values.page);
+      response.status(200).send(values);
     }
+
+    @ApiTags('messages')
+    @Post('send-message')
+    async sendMessage(@Res() response, @Body() sendMessageDto: SendMessageDto): Promise<any> {
+      console.log("SendMessageDto: ", sendMessageDto)
+      const values = await this.messagesService.sendMessage(sendMessageDto);
+      response.status(200).send(values);
+    }
+
+
 /*
     @ApiTags('connemessagesctions')
     @Get('/getone/:id')

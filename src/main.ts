@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
+import { check } from 'tcp-port-used';
+import { ConsoleLogger } from '@nestjs/common';
 
 global['fetch'] = require('node-fetch');
 
@@ -22,7 +23,8 @@ async function bootstrap() {
     credentials: true,
   }
   );
-
-  await app.listen(3000);
+  console.log("Port 3000 in use?", await check(3000))
+  console.log("Use this port instead ", await check(3000)?3001:3000)
+  await app.listen(await check(3000)?3001:3000);
 }
 bootstrap();

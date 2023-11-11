@@ -28,15 +28,6 @@ export class AfjController {
     return this.afjService.getHere();
   }
 
-  @Get('invitation')
-  @ApiOperation({ summary: 'Create connection invite' })
-  @ApiResponse({ status: 200, description: 'Connection link', type: String })
-  async createInvitation(): Promise<String> {
-    this.oobRecord = this.afjService.createInvitation()
-    return this.oobRecord
-  }
-
-
   @Post('createAgent')
   @ApiOperation({ summary: 'Create and Initialize new Agent' })
   @ApiResponse({ status: 200, description: 'Agent Created', type: String })
@@ -48,6 +39,15 @@ export class AfjController {
     } catch (error) {
       throw new Error(`Failed to initialize agent: ${error.message}`);
     }
+  }
+
+/*
+  @Get('invitation')
+  @ApiOperation({ summary: 'Create connection invite' })
+  @ApiResponse({ status: 200, description: 'Connection link', type: String })
+  async createInvitation(): Promise<String> {
+    this.oobRecord = this.afjService.createInvitation()
+    return this.oobRecord
   }
 
   @Post('invitationById/:id')
@@ -98,15 +98,13 @@ export class AfjController {
   }
 
 
-  /*
-      @Post('request-proof')
-      @ApiOperation({ summary: 'Request proof' })
-      @ApiResponse({status: 200, description: 'Sending proof request',type: String })
-      async requestProof(@Body() requestProofDto: RequestProofDto): Promise<String> {
-          console.log("Request Proof call")
-          return this.ssiAgentsService.requestProof(requestProofDto)
-      }
-  */
+  @Post('request-proof')
+  @ApiOperation({ summary: 'Request proof' })
+  @ApiResponse({status: 200, description: 'Sending proof request',type: String })
+  async requestProof(@Body() requestProofDto: RequestProofDto): Promise<String> {
+      console.log("Request Proof call")
+      return this.ssiAgentsService.requestProof(requestProofDto)
+  }
 
   // @Post('initialize')
   // @ApiOperation({ summary: 'Initialize Agent' })
@@ -115,73 +113,71 @@ export class AfjController {
   //   return await this.ssiAgentsService.initializeAgent(initializeSsiDto)
   // }
 
-  /*    
-      @Get('did')
-      @ApiResponse({status: 200,type: String})
-      getDID(): String {
-        return "asdf";
+    @Get('did')
+    @ApiResponse({status: 200,type: String})
+    getDID(): String {
+      return "asdf";
+    }
+  
+    @Get('oobs')
+    @ApiResponse({status: 200,type: String})
+    async getOOB(): Promise<String> {
+        const outOfBandRecords = await this.ssiAgent.agent.oob.getAll()
+        return JSON.stringify(outOfBandRecords);
+    }
+  
+    @Get('connections')
+    @ApiResponse({status: 200,type: String})
+    async getConnections(): Promise<String> {
+        const connectionRecords = await this.ssiAgent.agent?.connections.getAll()
+        return JSON.stringify(connectionRecords);
+    }
+  
+    @Get('credentials')
+    @ApiResponse({status: 200,type: String})
+    async getCredentials(): Promise<String> {
+        const credentialRecords = await this.ssiAgent.agent.credentials.getAll()
+        return JSON.stringify(credentialRecords);
+    }
+  
+    @Get('proofs')
+    @ApiResponse({status: 200,type: String})
+    async getProofs(): Promise<String> {
+        const proofRecords = await this.ssiAgent.agent.proofs.getAll()
+        return JSON.stringify(proofRecords);
+    }
+  
+    @Get('schemas')
+    @ApiResponse({status: 200,type: String})
+    async getSchemas(): Promise<any> {
+      const _schema = {
+        schemaId: "", //repository.getSchemaId(),
+        credentialDefinitionId: "" //repository.getCredentialDefinitionId(),
       }
-    
-      @Get('oobs')
-      @ApiResponse({status: 200,type: String})
-      async getOOB(): Promise<String> {
-          const outOfBandRecords = await this.ssiAgent.agent.oob.getAll()
-          return JSON.stringify(outOfBandRecords);
-      }
-    
-      @Get('connections')
-      @ApiResponse({status: 200,type: String})
-      async getConnections(): Promise<String> {
-          const connectionRecords = await this.ssiAgent.agent?.connections.getAll()
-          return JSON.stringify(connectionRecords);
-      }
-    
-      @Get('credentials')
-      @ApiResponse({status: 200,type: String})
-      async getCredentials(): Promise<String> {
-          const credentialRecords = await this.ssiAgent.agent.credentials.getAll()
-          return JSON.stringify(credentialRecords);
-      }
-    
-      @Get('proofs')
-      @ApiResponse({status: 200,type: String})
-      async getProofs(): Promise<String> {
-          const proofRecords = await this.ssiAgent.agent.proofs.getAll()
-          return JSON.stringify(proofRecords);
-      }
-    
-      @Get('schemas')
-      @ApiResponse({status: 200,type: String})
-      async getSchemas(): Promise<any> {
-        const _schema = {
-          schemaId: "", //repository.getSchemaId(),
-          credentialDefinitionId: "" //repository.getCredentialDefinitionId(),
+      return JSON.stringify(_schema);
+    }
+  
+    // @Get('register-schema')
+    // @ApiResponse({status: 200,type: String})
+    // async getRegisterSchema(): Promise<String> {
+    //     return "asdf";
+    // }
+      const template = {
+          attributes: [
+            'Name',
+            'Surname',
+            'Date of Birth',
+            'Event Name',
+            'Event Year',
+          ],
+          name: 'Conference Ticket',
+          version: '1.0',
         }
-        return JSON.stringify(_schema);
-      }
-    
-      // @Get('register-schema')
-      // @ApiResponse({status: 200,type: String})
-      // async getRegisterSchema(): Promise<String> {
-      //     return "asdf";
-      // }
-  /*
-        const template = {
-            attributes: [
-              'Name',
-              'Surname',
-              'Date of Birth',
-              'Event Name',
-              'Event Year',
-            ],
-            name: 'Conference Ticket',
-            version: '1.0',
-          }
-          const schema = await agent.ledger.registerSchema(template)
-          repository.saveSchemaId(schema.id)
-          res.status(200).json({ schema })
-        })
-  */
+        const schema = await agent.ledger.registerSchema(template)
+        repository.saveSchemaId(schema.id)
+        res.status(200).json({ schema })
+      })
+
   @Post('register-schema')
   @ApiOperation({ summary: 'Register Schema here' })
   @ApiResponse({ status: 200, description: 'Connection link', type: String })
@@ -218,5 +214,5 @@ export class AfjController {
   async getCreateDid(): Promise<String> {
     return "asdf";
   }
-
+*/
 }

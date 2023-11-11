@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AfjService  } from '../afj/afj.service';
-import { BasicMessageRecord } from '@aries-framework/core'
+import { SendMessageDto } from './dto/send.message.dto';
 
 @Injectable()
 export class MessagesService {
@@ -10,10 +10,19 @@ export class MessagesService {
         return "Messages Test Module";
     }
 
-    async getMessages(id:String): Promise<any> {
-        console.log("Messages service - get messages for connection id")
-        const messages = await this.afjService.afjAgent.agent.basicMessages.findAllByQuery({connectionId: id.toString()});
+    async getMessages(id:string): Promise<any> {
+        console.log("Messages service - get messages for connection id=", id)
+        const messages = await this.afjService.afjAgent.agent.basicMessages.findAllByQuery({connectionId: id});
         console.log("Connection=", messages)
         return messages
     }
+
+    async sendMessage(sendMessageDto:SendMessageDto): Promise<any> {
+        console.log("Messages service - send messages for connection id=", sendMessageDto.connectionId)
+        const messages = await this.afjService.afjAgent.agent.basicMessages.sendMessage(sendMessageDto.connectionId, sendMessageDto.message)
+        //this.afjService.afjAgent.agent.basicMessages.findAllByQuery()
+        console.log("Connection=", messages)
+        return messages
+    }
+
 }
