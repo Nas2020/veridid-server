@@ -1,10 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { Schema, CredDef } from 'indy-sdk'
-import { Agent, AutoAcceptProof, ConnectionEventTypes, ConnectionStateChangedEvent, ConsoleLogger, DidExchangeState, HttpOutboundTransport, InitConfig, LogLevel, ProofEventTypes, ProofStateChangedEvent } from '@aries-framework/core';
-import { InitializeAfjDto } from './dto/initialize-afj.dto';
+import { Agent, DidsModule, AutoAcceptProof, BasicMessageEventTypes, BasicMessageStateChangedEvent, ConnectionEventTypes, ConnectionStateChangedEvent, ConsoleLogger, DidExchangeState, HttpOutboundTransport, InitConfig, LogLevel, ProofEventTypes, ProofStateChangedEvent, BasicMessageRole } from '@aries-framework/core';
+import { InitializeAfjDto } from './dto/initialize-afj.dto.js';
 import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
-import { AfjAgent } from './entities/afj.entity';
-
+import { AfjAgent } from './entities/afj.entity.js';
+import { KeyDerivationMethod } from '@aries-framework/core'
+import { IndySdkModule, IndySdkIndyDidResolver } from '@aries-framework/indy-sdk'
+import indySdk from 'indy-sdk'
 
 @Injectable()
 export class AfjService {
@@ -24,13 +25,24 @@ export class AfjService {
       }
     })
   }
+
   schema1 = null;
+
   setupProofRequestListener() {
     console.log("Listen for proof")
     this.afjAgent.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
       //console.log("Proof presentation=",payload.proofRecord )
       console.log("Proof state: ", payload.proofRecord?.state)
       console.log("Proof verified: ", payload.proofRecord?.isVerified ? 'Verified' : 'not Verified')
+    })
+  }
+
+  setupMessageListener() {
+    console.log("Listen for messages")
+    this.afjAgent.agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async ({ payload }: BasicMessageStateChangedEvent) => {
+      if (payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
+        console.log("Message:",payload.message.content);
+      }
     })
   }
 
@@ -47,7 +59,7 @@ export class AfjService {
     return result;
   }
 
-  async createAgent(initSsi: InitializeAfjDto): Promise<string> {
+  async createAgent(initAfj: InitializeAfjDto): Promise<string> {
 
     interface AgentInfo {
       agentId: string;
@@ -56,50 +68,60 @@ export class AfjService {
       agent: object;
     }
 
-    if (this.agents.has(initSsi.agentId)) {
-      throw new BadRequestException(`Agent with ID ${initSsi.agentId} already exists.`);
+    if (this.agents.has(initAfj.agentId)) {
+      throw new BadRequestException(`Agent with ID ${initAfj.agentId} already exists.`);
 
     }
 
 
     const config: InitConfig = {
-      label: initSsi.label,
+      label: initAfj.label,
       logger: new ConsoleLogger(LogLevel.info),
       walletConfig: {
-        id: initSsi.walletId,
-        key: initSsi.walletKey,
+        id: initAfj.walletId,
+        key: initAfj.walletKey,
+        keyDerivationMethod: KeyDerivationMethod.Argon2IMod
       },
-      publicDidSeed: initSsi.publicDIDSeed,
-      indyLedgers: [
-        {
-          indyNamespace: 'BCovrinTest',
-          genesisTransactions: process.env.BCovrinTest,
-          id: 'BCovrinTest',
-          isProduction: false,
-        },
-      ],
-      autoAcceptConnections: true,
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      connectToIndyLedgersOnStartup: true,
-      endpoints: [initSsi.agentConfig.endpoint + ':' + initSsi.agentConfig.inPort]
+      endpoints: [initAfj.agentConfig.endpoint + ':' + initAfj.agentConfig.inPort]
     }
+
+    const modules = {
+        indySdk: new IndySdkModule({
+          indySdk,
+          networks: [
+            {
+              id: 'Sovrin Mainnet',
+              // Important: make sure to pick the correct indy namespace for the network you're connecting to
+              // See: https://github.com/hyperledger/indy-did-networks/issues/3
+              indyNamespace: 'sovrin',
+              isProduction: true,
+              genesisPath: './genesis/sovrin-genesis.txn',
+            },
+          ],
+        }),
+        dids: new DidsModule({
+          // Important: Make sure to register the IndySdkIndyDidResolver
+          resolvers: [new IndySdkIndyDidResolver()],
+        }),
+    }
+
     // Creating an agent instance
-    const agent = new Agent({ config: config, dependencies: agentDependencies })
+    const agent = new Agent({ config: config, dependencies: agentDependencies, modules: modules })
 
 
     // Registering the required in- and outbound transports
     agent.registerOutboundTransport(new HttpOutboundTransport())
-    agent.registerInboundTransport(new HttpInboundTransport({ port: initSsi.agentConfig.inPort }))
+    agent.registerInboundTransport(new HttpInboundTransport({ port: initAfj.agentConfig.inPort }))
 
     // Function to initialize the agent
     const initialize = async () => await agent.initialize().catch(console.error)
     await agent.initialize();
     this.afjAgent.agent = agent
-    this.afjAgent.agentId = initSsi.agentId
-    this.afjAgent.inPort = initSsi.agentConfig.inPort
-    this.afjAgent.endpoint = initSsi.agentConfig.endpoint
-    console.log("New agent = ", initSsi)
-    console.log("this.afjAgent from service", this.afjAgent)
+    this.afjAgent.agentId = initAfj.agentId
+    this.afjAgent.inPort = initAfj.agentConfig.inPort
+    this.afjAgent.endpoint = initAfj.agentConfig.endpoint
+    console.log("New agent = ", initAfj)
+    //console.log("this.afjAgent from service", this.afjAgent)
     const agentInfo: AgentInfo = {
       agentId: this.afjAgent.agentId,
       endpoint: this.afjAgent.endpoint,
@@ -107,10 +129,10 @@ export class AfjService {
       agent: this.afjAgent.agent
     }
 
-    console.log("agentInfo", agentInfo)
+    //console.log("agentInfo", agentInfo)
     this.setupConnectionListener()
     this.setupProofRequestListener()
-    await this.agents.set(initSsi.agentId, agentInfo);
+    await this.agents.set(initAfj.agentId, agentInfo);
     return `Agent with agent ID ${this.afjAgent.agentId} successfully created and initialized`
 
   }
@@ -142,21 +164,20 @@ export class AfjService {
   }
 
   async createInvitation(): Promise<String> {
-
     var outOfBandRecord = await this.afjAgent.agent.oob.createLegacyInvitation()
     var invite = {
       invitationUrl: outOfBandRecord.invitation.toUrl({ domain: this.afjAgent.endpoint + ':' + this.afjAgent.inPort }),
       outOfBandRecord
     }
+    return invite.invitationUrl
+  }
 
-    /*
+  async createInvitationOOB(): Promise<String> {
     const outOfBandRecord = await this.afjAgent.agent.oob.createInvitation()
     var invite = {
-      invitationUrl: outOfBandRecord.outOfBandInvitation.toUrl({ domain: 'http://'+ssiAgent.endpoint+':'+ssiAgent.inPort }),
+      invitationUrl: outOfBandRecord.outOfBandInvitation.toUrl({ domain: this.afjAgent.endpoint + ':' + this.afjAgent.inPort }),
       outOfBandRecord,
     }
-    */
-    console.log(`invitation from agent ${this.afjAgent.agentId}, invitation URL is ${invite.invitationUrl}`)
     return invite.invitationUrl
   }
 
@@ -180,6 +201,13 @@ export class AfjService {
     return invite.invitationUrl
   }
 
+  receiveInvitation = async (invitationUrl: string) => {
+    console.log("Invitation URL=", invitationUrl)
+    const { outOfBandRecord } = await this.afjAgent.agent.oob.receiveInvitationFromUrl(invitationUrl)
+  
+    return outOfBandRecord
+  }
+/*
   async issueCred(credDef: CredDef) {
 
     const connectionId = this.afjAgent.connection_id;
@@ -222,7 +250,7 @@ export class AfjService {
     return credDef;
 
   }
-
+*/
   getInPort(): number {
     console.log("port is:", this.afjAgent.inPort)
     return this.afjAgent.inPort;

@@ -5,7 +5,8 @@ export class AgentConfigDto {
   @IsString()
   @ApiProperty({
     description: 'Agent endpoint URL',
-    example: "afj-test.veridid.services",
+    //example: "afj-test.veridid.services",
+    example: "http://192.168.2.192",
   })
   endpoint: string;
 

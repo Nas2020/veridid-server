@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AfjService  } from '../afj/afj.service';
+import { AfjService  } from '../afj/afj.service.js';
 import { OutOfBandService, OutOfBandRepository } from '@aries-framework/core'
-import { OutOfBandState } from '@aries-framework/core/build/modules/oob/domain/OutOfBandState'
-import { GetListDto } from './dto/getlist.dto';
-var _ = require("underscore");
+import { OutOfBandState } from '@aries-framework/core/build/modules/oob/domain/OutOfBandState.js'
+import { GetListDto } from './dto/getlist.dto.js';
+import _ from 'lodash';
 
 @Injectable()
 export class ConnectionsService {
@@ -16,7 +16,7 @@ export class ConnectionsService {
     async getListOOB(query: any): Promise<any> {
         console.log("Connections service - getListOOB")
         console.log("Agent=", this.afjService.afjAgent.agent)
-        let outOfBandRecords = await this.afjService.afjAgent.agent.oob.getAll()
+        let outOfBandRecords = await this.afjService.afjAgent.agent.connections.getAll();
         //let outOfBandRecords = await this.ssiService.ssiAgent.agent.connections.getAll()
         // { pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object}, meta: {Object} }
         console.log("Display:", query);
@@ -49,6 +49,62 @@ export class ConnectionsService {
           pagination.push(outOfBandRecords[i])
         }
         return { page: pagination, total: totalItems};  
+    }
+
+    async getListClassicPlain(): Promise<any> {
+        console.log("Connections service - getListClassic Plain")
+        let classicRecords = await this.afjService.afjAgent.agent.connections.getAll()
+        return classicRecords;  
+
+    }
+
+    async createInviteClassic(): Promise<String> {
+        let inviteURL = await this.afjService.createInvitation()
+        console.log("Connection Service invite url=", inviteURL )
+        return inviteURL;  
+    }
+
+    async createInviteOOB(): Promise<String> {
+        let inviteURL = await this.afjService.createInvitationOOB()
+        console.log("Connection Service invite OOB url=", inviteURL )
+        return inviteURL;  
+    }
+
+
+    async getListClassic(query: any): Promise<any> {
+        console.log("Connections service - getListClassic")
+        //console.log("Agent=", this.afjService.afjAgent.agent)
+        let classicRecords = await this.afjService.afjAgent.agent.connections.getAll()
+        // { pagination: { page: {int} , perPage: {int} }, sort: { field: {string}, order: {string} }, filter: {Object}, meta: {Object} }
+        console.log("Display:", query);
+        // Filter
+        if(query.q) {
+            classicRecords = _.where(classicRecords, {id: query.q});
+            console.log("Filtered:", classicRecords)
+        }
+        const totalItems = classicRecords.length
+        // Sort 
+        if(query._order === "DESC") {
+            classicRecords.sort((a, b) => (a[query._sort] < b[query._sort]) ? 1 : -1)
+        } 
+        else {
+            classicRecords.sort((a, b) => (a[query._sort] > b[query._sort]) ? 1 : -1)
+        }
+        // Paginate
+        // Return just the requested page
+        let pagination =[]
+        let lastOnPage = (totalItems > query._end) ? query._end : totalItems
+        for(let i = query._start ; i < lastOnPage; i++) {
+          console.log("ID=",classicRecords[i].id)
+          pagination.push(classicRecords[i])
+        }
+        return { page: pagination, total: totalItems};  
+
+    }
+
+    async receiveInvitation(invitation: string) : Promise<any> {
+        console.log("Connections Service receiveInvitation Invitation=", invitation);
+        return await this.afjService.receiveInvitation(invitation);
     }
 
     async getOne(id:string): Promise<any> {

@@ -1,9 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
-
-global['fetch'] = require('node-fetch');
+import { check } from 'tcp-port-used';
+import { ConsoleLogger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,7 +21,8 @@ async function bootstrap() {
     credentials: true,
   }
   );
-
-  await app.listen(3000);
+  console.log("Port 3000 in use?", await check(3000))
+  console.log("Use this port instead ", await check(3000)?3001:3000)
+  await app.listen(await check(3000)?3001:3000);
 }
 bootstrap();
