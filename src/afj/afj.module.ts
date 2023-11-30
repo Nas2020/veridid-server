@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AfjController } from './afj.controller';
-import { AfjService } from './afj.service';
+import { AfjController } from './afj.controller.js';
+import { AfjService } from './afj.service.js';
 
 @Module({
   controllers: [AfjController],

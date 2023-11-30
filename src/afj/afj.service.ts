@@ -1,11 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { Schema, CredDef } from 'indy-sdk'
-import { Agent, AutoAcceptProof, BasicMessageEventTypes, BasicMessageStateChangedEvent, ConnectionEventTypes, ConnectionStateChangedEvent, ConsoleLogger, DidExchangeState, HttpOutboundTransport, InitConfig, LogLevel, ProofEventTypes, ProofStateChangedEvent, BasicMessageRole } from '@aries-framework/core';
-import { InitializeAfjDto } from './dto/initialize-afj.dto';
+import { Agent, DidsModule, AutoAcceptProof, BasicMessageEventTypes, BasicMessageStateChangedEvent, ConnectionEventTypes, ConnectionStateChangedEvent, ConsoleLogger, DidExchangeState, HttpOutboundTransport, InitConfig, LogLevel, ProofEventTypes, ProofStateChangedEvent, BasicMessageRole } from '@aries-framework/core';
+import { InitializeAfjDto } from './dto/initialize-afj.dto.js';
 import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
-import { AfjAgent } from './entities/afj.entity';
+import { AfjAgent } from './entities/afj.entity.js';
 import { KeyDerivationMethod } from '@aries-framework/core'
-
+import { IndySdkModule, IndySdkIndyDidResolver } from '@aries-framework/indy-sdk'
+import indySdk from 'indy-sdk'
 
 @Injectable()
 export class AfjService {
@@ -82,22 +82,31 @@ export class AfjService {
         key: initAfj.walletKey,
         keyDerivationMethod: KeyDerivationMethod.Argon2IMod
       },
-      publicDidSeed: initAfj.publicDIDSeed,
-      indyLedgers: [
-        {
-          indyNamespace: 'BCovrinTest',
-          genesisTransactions: process.env.BCovrinTest,
-          id: 'BCovrinTest',
-          isProduction: false,
-        },
-      ],
-      autoAcceptConnections: true,
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      connectToIndyLedgersOnStartup: true,
       endpoints: [initAfj.agentConfig.endpoint + ':' + initAfj.agentConfig.inPort]
     }
+
+    const modules = {
+        indySdk: new IndySdkModule({
+          indySdk,
+          networks: [
+            {
+              id: 'Sovrin Mainnet',
+              // Important: make sure to pick the correct indy namespace for the network you're connecting to
+              // See: https://github.com/hyperledger/indy-did-networks/issues/3
+              indyNamespace: 'sovrin',
+              isProduction: true,
+              genesisPath: './genesis/sovrin-genesis.txn',
+            },
+          ],
+        }),
+        dids: new DidsModule({
+          // Important: Make sure to register the IndySdkIndyDidResolver
+          resolvers: [new IndySdkIndyDidResolver()],
+        }),
+    }
+
     // Creating an agent instance
-    const agent = new Agent({ config: config, dependencies: agentDependencies })
+    const agent = new Agent({ config: config, dependencies: agentDependencies, modules: modules })
 
 
     // Registering the required in- and outbound transports
@@ -155,21 +164,20 @@ export class AfjService {
   }
 
   async createInvitation(): Promise<String> {
-
-    
     var outOfBandRecord = await this.afjAgent.agent.oob.createLegacyInvitation()
     var invite = {
       invitationUrl: outOfBandRecord.invitation.toUrl({ domain: this.afjAgent.endpoint + ':' + this.afjAgent.inPort }),
       outOfBandRecord
     }
-    /*
+    return invite.invitationUrl
+  }
+
+  async createInvitationOOB(): Promise<String> {
     const outOfBandRecord = await this.afjAgent.agent.oob.createInvitation()
     var invite = {
-      invitationUrl: outOfBandRecord.outOfBandInvitation.toUrl({ domain: 'http://'+this.afjAgent.endpoint+':'+this.afjAgent.inPort }),
+      invitationUrl: outOfBandRecord.outOfBandInvitation.toUrl({ domain: this.afjAgent.endpoint + ':' + this.afjAgent.inPort }),
       outOfBandRecord,
     }
-    */
-    console.log(`invitation from agent ${this.afjAgent.agentId}, invitation URL is ${invite.invitationUrl}`)
     return invite.invitationUrl
   }
 
@@ -199,7 +207,7 @@ export class AfjService {
   
     return outOfBandRecord
   }
-
+/*
   async issueCred(credDef: CredDef) {
 
     const connectionId = this.afjAgent.connection_id;
@@ -242,7 +250,7 @@ export class AfjService {
     return credDef;
 
   }
-
+*/
   getInPort(): number {
     console.log("port is:", this.afjAgent.inPort)
     return this.afjAgent.inPort;

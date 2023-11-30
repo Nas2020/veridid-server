@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Res, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiProperty } from '@nestjs/swagger';
-import { MessagesService } from './messages.service';
-import { MessagesDto } from './dto/messages.dto';
-import { SendMessageDto } from './dto/send.message.dto';
+import { MessagesService } from './messages.service.js';
+import { MessagesDto } from './dto/messages.dto.js';
+import { SendMessageDto } from './dto/send.message.dto.js';
 import { Console } from 'console';
 
 @Controller('messages')

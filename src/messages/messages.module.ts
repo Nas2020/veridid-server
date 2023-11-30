@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { MessagesController } from './messages.controller';
-import { MessagesService } from './messages.service';
-import { AfjModule } from '../afj/afj.module';
+import { MessagesController } from './messages.controller.js';
+import { MessagesService } from './messages.service.js';
+import { AfjModule } from '../afj/afj.module.js';
 
 
 @Module({

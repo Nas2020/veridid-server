@@ -1,12 +1,11 @@
 import { Body, Controller, Get, Param, Post, Delete } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Schema } from 'indy-sdk'
 import type { Agent, InitConfig } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { AfjAgent } from './entities/afj.entity';
-import { InitializeAfjDto } from './dto/initialize-afj.dto';
-import { RequestProofDto } from './dto/request-proof.dto';
-import { AfjService } from './afj.service';
+import { AfjAgent } from './entities/afj.entity.js';
+import { InitializeAfjDto } from './dto/initialize-afj.dto.js';
+import { RequestProofDto } from './dto/request-proof.dto.js';
+import { AfjService } from './afj.service.js';
 
 @Controller('afj')
 export class AfjController {
@@ -37,7 +36,7 @@ export class AfjController {
     try {
       return await this.afjService.createAgent(initializeAfjDto);
     } catch (error) {
-      throw new Error(`Failed to initialize agent: ${error.message}`);
+      throw new Error(`Failed to initialize agent: ${error}`);
     }
   }
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AfjService  } from '../afj/afj.service';
-import { SendMessageDto } from './dto/send.message.dto';
+import { AfjService  } from '../afj/afj.service.js';
+import { SendMessageDto } from './dto/send.message.dto.js';
 
 @Injectable()
 export class MessagesService {

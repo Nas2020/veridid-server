@@ -1,10 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { check } from 'tcp-port-used';
 import { ConsoleLogger } from '@nestjs/common';
-
-global['fetch'] = require('node-fetch');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

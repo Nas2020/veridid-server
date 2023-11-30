@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AfjService  } from '../afj/afj.service';
+import { AfjService  } from '../afj/afj.service.js';
 import { OutOfBandService, OutOfBandRepository } from '@aries-framework/core'
-import { OutOfBandState } from '@aries-framework/core/build/modules/oob/domain/OutOfBandState'
-import { GetListDto } from './dto/getlist.dto';
-var _ = require("underscore");
+import { OutOfBandState } from '@aries-framework/core/build/modules/oob/domain/OutOfBandState.js'
+import { GetListDto } from './dto/getlist.dto.js';
+import _ from 'lodash';
 
 @Injectable()
 export class ConnectionsService {
@@ -63,6 +63,13 @@ export class ConnectionsService {
         console.log("Connection Service invite url=", inviteURL )
         return inviteURL;  
     }
+
+    async createInviteOOB(): Promise<String> {
+        let inviteURL = await this.afjService.createInvitationOOB()
+        console.log("Connection Service invite OOB url=", inviteURL )
+        return inviteURL;  
+    }
+
 
     async getListClassic(query: any): Promise<any> {
         console.log("Connections service - getListClassic")

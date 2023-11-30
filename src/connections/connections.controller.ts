@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Res, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiProperty } from '@nestjs/swagger';
-import { ConnectionsService } from './connections.service';
-import { GetListDto } from './dto/getlist.dto';
-import { ReceiveInvitationDto } from './dto/receive.invitation.dto';
+import { ConnectionsService } from './connections.service.js';
+import { GetListDto } from './dto/getlist.dto.js';
+import { ReceiveInvitationDto } from './dto/receive.invitation.dto.js';
 
 @Controller('Connections')
 export class ConnectionsController {
@@ -19,6 +19,13 @@ export class ConnectionsController {
     @Get('/create-invitation')
     async createInviteClassic(@Res() response): Promise<any> {
       const url = await this.connectionsService.createInviteClassic();
+      response.status(200).send(url);
+    }
+
+    @ApiTags('connections')
+    @Get('/create-invitation-oob')
+    async createInviteOOB(@Res() response): Promise<any> {
+      const url = await this.connectionsService.createInviteOOB();
       response.status(200).send(url);
     }
 
